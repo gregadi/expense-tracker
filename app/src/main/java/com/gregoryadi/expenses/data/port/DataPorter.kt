@@ -27,7 +27,12 @@ data class ImportResult(val added: Int, val skipped: Int)
  * Entries and categories carry a "kind" ("expense" or "income"). Backups made before income existed
  * have no kind and import as expenses.
  */
-class DataPorter(private val context: Context, private val db: AppDatabase) {
+class DataPorter(
+    private val context: Context,
+    private val db: AppDatabase,
+    /** Runs after an import, so the widget picks up restored entries. */
+    private val onChange: () -> Unit = {},
+) {
 
     /** Writes everything to [uri] as JSON and returns the number of entries saved. */
     suspend fun exportJson(uri: Uri): Int = withContext(Dispatchers.IO) {
@@ -215,7 +220,7 @@ class DataPorter(private val context: Context, private val db: AppDatabase) {
                 }
             }
             ImportResult(added, skipped)
-        }
+        }.also { onChange() }
     }
 
     private fun kindOf(o: JSONObject): String =

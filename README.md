@@ -16,6 +16,9 @@ inner screen.
 - **Insights**: Day / Week / Month / Year, total, trend chart, and spending per payment method and per category.
 - **History**: grouped by day, All / Expenses / Income filter, search, filter by method or category,
   swipe left to delete (with undo), tap to edit.
+- **Home screen widget**: one resizable widget. Small (2x2): today + Add. Medium (4x2): adds the month.
+  Large (4x3): adds what you saved and quick-add buttons for your three most-used methods. Taps open the
+  keypad directly; background transparency is set per widget (long-press > settings). Code in `widget/`.
 - **Backup**: save and restore a JSON file, export CSV for Sheets/Excel. Android Auto Backup is switched on too.
 
 Amounts are whole rupiah stored as `Long`. Weeks start on Monday.
@@ -73,7 +76,7 @@ mid-entry keeps what you typed.
 
 ## Not built yet (roadmap milestones 4 and 5)
 
-Favorites, budgets, recurring expenses, home screen widget, app lock, top-ups/transfers, receipt photos,
+Favorites, budgets, recurring expenses, app lock, top-ups/transfers, receipt photos,
 Flex-mode layout, date-range filter in History, reordering payment methods.
 
 ## Notes

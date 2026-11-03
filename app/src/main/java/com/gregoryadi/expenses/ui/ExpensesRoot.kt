@@ -49,6 +49,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.windowsizeclass.WindowWidthSizeClass
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -114,6 +115,15 @@ fun ExpensesRoot(widthClass: WindowWidthSizeClass) {
     val addVm = appViewModel { AddExpenseViewModel(it.expenses, it.lookups, it.settings) }
     val addState by addVm.state.collectAsStateWithLifecycle()
 
+    // Widget taps: close Settings if it's open and show the Add sheet.
+    val container = LocalAppContainer.current
+    LaunchedEffect(container) {
+        for (request in container.addRequests) {
+            overlay = Overlay.NONE
+            addVm.startNew(request.methodId)
+        }
+    }
+
     BackHandler(enabled = overlay != Overlay.NONE) {
         overlay = if (overlay == Overlay.MANAGE) Overlay.SETTINGS else Overlay.NONE
     }
@@ -162,7 +172,7 @@ fun ExpensesRoot(widthClass: WindowWidthSizeClass) {
                 exit = slideOutVertically(tween(Motion.ENTER_MS, easing = FastOutSlowInEasing)) { it * 2 } + fadeOut(),
                 modifier = Modifier.align(Alignment.BottomCenter),
             ) {
-                FloatingNav(selected = tab, onSelect = { tab = it }, onAdd = addVm::startNew)
+                FloatingNav(selected = tab, onSelect = { tab = it }, onAdd = { addVm.startNew() })
             }
 
             SnackbarHost(

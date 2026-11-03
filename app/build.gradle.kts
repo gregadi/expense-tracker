@@ -68,5 +68,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // Home screen widget (Glance) and its per-widget settings.
+    implementation(libs.androidx.glance.appwidget)
+    implementation(libs.androidx.datastore.preferences)
+
     testImplementation(libs.junit)
 }

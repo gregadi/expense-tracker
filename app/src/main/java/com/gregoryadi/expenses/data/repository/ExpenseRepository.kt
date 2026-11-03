@@ -7,7 +7,11 @@ import com.gregoryadi.expenses.data.db.ExpenseWithDetails
 import com.gregoryadi.expenses.data.db.GroupTotal
 import kotlinx.coroutines.flow.Flow
 
-class ExpenseRepository(private val dao: ExpenseDao) {
+/** [onChange] runs after every write, so the home screen widget can refresh. */
+class ExpenseRepository(
+    private val dao: ExpenseDao,
+    private val onChange: () -> Unit = {},
+) {
     fun observeAll(): Flow<List<ExpenseWithDetails>> = dao.observeAll()
     fun observeRecent(limit: Int): Flow<List<ExpenseWithDetails>> = dao.observeRecent(limit)
     fun observeTotal(kind: String, start: Long, end: Long): Flow<Long> = dao.observeTotal(kind, start, end)
@@ -20,18 +24,25 @@ class ExpenseRepository(private val dao: ExpenseDao) {
     suspend fun get(id: Long): ExpenseEntity? = dao.get(id)
 
     /** Inserts a new expense (id == 0) or updates an existing one. */
-    suspend fun save(expense: ExpenseEntity): Long =
-        if (expense.id == 0L) {
+    suspend fun save(expense: ExpenseEntity): Long {
+        val id = if (expense.id == 0L) {
             dao.insert(expense)
         } else {
             dao.update(expense)
             expense.id
         }
+        onChange()
+        return id
+    }
 
-    suspend fun delete(expense: ExpenseEntity) = dao.delete(expense)
+    suspend fun delete(expense: ExpenseEntity) {
+        dao.delete(expense)
+        onChange()
+    }
 
     /** Puts a deleted expense back, keeping its old id. */
     suspend fun restore(expense: ExpenseEntity) {
         dao.insert(expense)
+        onChange()
     }
 }

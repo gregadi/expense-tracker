@@ -37,6 +37,22 @@ interface PaymentMethodDao {
 
     @Query("UPDATE payment_method SET color = :to WHERE color = :from")
     suspend fun replaceColor(from: Long, to: Long)
+
+    @Query("SELECT * FROM payment_method WHERE archived = 0 ORDER BY sortOrder, id")
+    suspend fun getActive(): List<PaymentMethodEntity>
+
+    /** Payment methods used most often for spending since [since], for the widget's quick-add buttons. */
+    @Query(
+        """
+        SELECT pm.* FROM payment_method pm
+        INNER JOIN expense e ON e.paymentMethodId = pm.id
+        WHERE pm.archived = 0 AND e.kind = 'expense' AND e.occurredAt >= :since
+        GROUP BY pm.id
+        ORDER BY COUNT(e.id) DESC, pm.sortOrder
+        LIMIT :limit
+        """
+    )
+    suspend fun mostUsed(since: Long, limit: Int): List<PaymentMethodEntity>
 }
 
 @Dao
@@ -137,6 +153,18 @@ interface ExpenseDao {
         """
     )
     fun observeTotalsByCategory(kind: String, start: Long, end: Long): Flow<List<GroupTotal>>
+
+    /** One-off sum, for the widget (which reads once per refresh instead of observing). */
+    @Query(
+        """
+        SELECT COALESCE(SUM(amount), 0) FROM expense
+        WHERE kind = :kind AND occurredAt >= :start AND occurredAt < :end
+        """
+    )
+    suspend fun sum(kind: String, start: Long, end: Long): Long
+
+    @Query("SELECT COUNT(*) FROM expense WHERE kind = :kind AND occurredAt >= :start AND occurredAt < :end")
+    suspend fun countIn(kind: String, start: Long, end: Long): Int
 
     /** Used by import to skip entries that are already in the database. */
     @Query(

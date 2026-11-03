@@ -7,9 +7,11 @@ import com.gregoryadi.expenses.data.port.DataPorter
 import com.gregoryadi.expenses.data.prefs.SettingsStore
 import com.gregoryadi.expenses.data.repository.ExpenseRepository
 import com.gregoryadi.expenses.data.repository.LookupRepository
+import com.gregoryadi.expenses.widget.WidgetRefresher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 
 /**
@@ -26,11 +28,21 @@ class AppContainer(context: Context) {
             .build()
 
     val settings = SettingsStore(appContext)
-    val expenses = ExpenseRepository(database.expenseDao())
-    val lookups = LookupRepository(database.paymentMethodDao(), database.categoryDao())
-    val porter = DataPorter(appContext, database)
+    val widgets = WidgetRefresher(appContext, scope)
+    val expenses = ExpenseRepository(database.expenseDao(), onChange = widgets::refresh)
+    val lookups = LookupRepository(database.paymentMethodDao(), database.categoryDao(), onChange = widgets::refresh)
+    val porter = DataPorter(appContext, database, onChange = widgets::refresh)
+
+    /**
+     * "Open the Add sheet" requests, e.g. from a widget tap. Conflated: only the latest matters,
+     * and each is handled once.
+     */
+    val addRequests = Channel<AddRequest>(Channel.CONFLATED)
 
     fun seedIfEmpty() {
         scope.launch { lookups.seedIfEmpty() }
     }
 }
+
+/** Open the Add sheet, optionally with a payment method already picked. */
+data class AddRequest(val methodId: Long?)

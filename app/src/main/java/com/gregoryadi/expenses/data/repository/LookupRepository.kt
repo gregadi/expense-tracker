@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.Flow
 class LookupRepository(
     private val methodDao: PaymentMethodDao,
     private val categoryDao: CategoryDao,
+    /** Runs after a method or category changes, so the widget shows new names and colours. */
+    private val onChange: () -> Unit = {},
 ) {
     fun observeActiveMethods(): Flow<List<PaymentMethodEntity>> = methodDao.observeActive()
     fun observeAllMethods(): Flow<List<PaymentMethodEntity>> = methodDao.observeAll()
@@ -26,6 +28,7 @@ class LookupRepository(
         } else {
             methodDao.update(clean)
         }
+        onChange()
     }
 
     suspend fun saveCategory(item: CategoryEntity) {
@@ -35,6 +38,7 @@ class LookupRepository(
         } else {
             categoryDao.update(clean)
         }
+        onChange()
     }
 
     /**
@@ -46,6 +50,7 @@ class LookupRepository(
         if (categoryDao.countByKind(Kind.EXPENSE) == 0) categoryDao.insertAll(DefaultData.categories())
         if (categoryDao.countByKind(Kind.INCOME) == 0) categoryDao.insertAll(DefaultData.incomeCategories())
         restyleLegacyColors()
+        onChange()
     }
 
     /** Swaps the first theme's muted colours for the Ink palette; a no-op once done. */

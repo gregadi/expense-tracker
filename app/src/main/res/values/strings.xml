@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Expenses</string>
+    <string name="widget_name">Expenses</string>
+    <string name="widget_description">Today\'s spending, the month at a glance, and one-tap add</string>
 </resources>

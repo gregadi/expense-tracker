@@ -13,9 +13,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -59,14 +61,26 @@ class AddExpenseViewModel(
     val categories: StateFlow<List<CategoryEntity>> =
         lookups.observeAllCategories().stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    fun startNew() {
-        _state.value = AddState(
-            visible = true,
-            kind = Kind.EXPENSE,
-            methodId = defaultMethod(Kind.EXPENSE),
-            categoryId = defaultCategory(Kind.EXPENSE),
-            occurredAt = System.currentTimeMillis(),
-        )
+    /**
+     * Opens the sheet for a new expense. [methodId] preselects a payment method (from the widget's
+     * quick-add buttons); otherwise the last one used is picked.
+     */
+    fun startNew(methodId: Long? = null) {
+        viewModelScope.launch {
+            // Opened from the widget while the app was closed, the lists may still be loading.
+            withTimeoutOrNull(2_000) {
+                methods.first { it.isNotEmpty() }
+                categories.first { it.isNotEmpty() }
+            }
+            val preset = methods.value.firstOrNull { it.id == methodId && !it.archived }?.id
+            _state.value = AddState(
+                visible = true,
+                kind = Kind.EXPENSE,
+                methodId = preset ?: defaultMethod(Kind.EXPENSE),
+                categoryId = defaultCategory(Kind.EXPENSE),
+                occurredAt = System.currentTimeMillis(),
+            )
+        }
     }
 
     fun startEdit(id: Long) {
